@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Portfolio</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
+  <link rel="manifest" href="favicon_io/site.webmanifest">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+      font-family: Arial, sans-serif;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 100%;
+      padding: 0;
+      margin: 0;
+    }
+    
+    #pdf-viewer {
+      width: 100%;
+      background: white;
+    }
+    
+    canvas {
+      width: 95%;
+      height: auto;
+      display: block;
+      margin: 10px auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="pdf-viewer"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    // Using CDN version of PDF.js
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    
+    const pdfViewer = document.getElementById('pdf-viewer');
+    
+    // Calculate scale based on window width
+    function getScale() {
+      // Get the viewport width
+      const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+      // PDF.js default viewport width is typically around 800-1000px
+      // We'll use 900 as an estimate and scale accordingly
+      return viewportWidth / 900;
+    }
+    
+    // Load the PDF
+    pdfjsLib.getDocument('./portfolio.pdf').promise
+      .then(function(pdfDoc) {
+        console.log(`PDF loaded: ${pdfDoc.numPages} pages`);
+        
+        // Render all pages
+        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+          renderPage(pdfDoc, pageNum);
+        }
+      })
+      .catch(function(error) {
+        console.error('Error loading PDF:', error);
+      });
+    
+    // Render a specific page
+    function renderPage(pdfDoc, pageNumber) {
+      pdfDoc.getPage(pageNumber).then(function(page) {
+        const scale = getScale();
+        const viewport = page.getViewport({ scale });
+        
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        };
+        
+        page.render(renderContext).promise.then(() => {
+          pdfViewer.appendChild(canvas);
+        });
+      });
+    }
+    
+    // Adjust scale when window is resized
+    window.addEventListener('resize', function() {
+      // Clear existing canvases
+      pdfViewer.innerHTML = '';
+      
+      // Reload the PDF with new scale
+      pdfjsLib.getDocument('./portfolio.pdf').promise
+        .then(function(pdfDoc) {
+          for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+            renderPage(pdfDoc, pageNum);
+          }
+        });
+    });
+  </script>
+</body>
+</html>
