@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mega Media - Sai Ram Venkat Portfolio</title>
+  <title>My Portfolio</title>
   <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
@@ -28,39 +28,17 @@
       background: white;
     }
     
-    .pdf-page-container {
-      width: 95%;
-      margin: 10px auto;
-      min-height: 500px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: white;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    
     canvas {
-      width: 100%;
+      width: 95%;
       height: auto;
       display: block;
-    }
-    
-    .loading-indicator {
-      color: #666;
-      font-size: 14px;
-    }
-    
-    #pdf-loading {
-      text-align: center;
-      padding: 20px;
-      font-size: 16px;
-      color: #333;
+      margin: 10px auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div id="pdf-loading">Loading PDF...</div>
     <div id="pdf-viewer"></div>
   </div>
 
@@ -71,65 +49,33 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     
     const pdfViewer = document.getElementById('pdf-viewer');
-    const pdfLoading = document.getElementById('pdf-loading');
-    let pdfDocument = null;
-    let pagesRendered = {};
     
     // Calculate scale based on window width
     function getScale() {
+      // Get the viewport width
       const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-      return (viewportWidth * 0.95) / 900;
+      // PDF.js default viewport width is typically around 800-1000px
+      // We'll use 900 as an estimate and scale accordingly
+      return viewportWidth / 900;
     }
     
     // Load the PDF
     pdfjsLib.getDocument('./portfolio.pdf').promise
-      .then(function(pdf) {
-        pdfDocument = pdf;
-        console.log(`PDF loaded: ${pdfDocument.numPages} pages`);
-        pdfLoading.style.display = 'none';
+      .then(function(pdfDoc) {
+        console.log(`PDF loaded: ${pdfDoc.numPages} pages`);
         
-        // Create placeholder divs for all pages
-        for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
-          const pageContainer = document.createElement('div');
-          pageContainer.className = 'pdf-page-container';
-          pageContainer.dataset.pageNumber = pageNum;
-          pageContainer.innerHTML = `<div class="loading-indicator">Page ${pageNum}</div>`;
-          pdfViewer.appendChild(pageContainer);
+        // Render all pages
+        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+          renderPage(pdfDoc, pageNum);
         }
-        
-        // Set up intersection observer for lazy loading
-        setupIntersectionObserver();
       })
       .catch(function(error) {
         console.error('Error loading PDF:', error);
-        pdfLoading.textContent = 'Error loading PDF. Please try again later.';
       });
-    
-    function setupIntersectionObserver() {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const pageNum = parseInt(entry.target.dataset.pageNumber);
-            if (!pagesRendered[pageNum]) {
-              renderPage(pageNum, entry.target);
-              pagesRendered[pageNum] = true;
-            }
-          }
-        });
-      }, {
-        rootMargin: '200px 0px', // Start loading when page is 200px from viewport
-        threshold: 0.1
-      });
-      
-      // Observe all page containers
-      document.querySelectorAll('.pdf-page-container').forEach(pageDiv => {
-        observer.observe(pageDiv);
-      });
-    }
     
     // Render a specific page
-    function renderPage(pageNumber, container) {
-      pdfDocument.getPage(pageNumber).then(function(page) {
+    function renderPage(pdfDoc, pageNumber) {
+      pdfDoc.getPage(pageNumber).then(function(page) {
         const scale = getScale();
         const viewport = page.getViewport({ scale });
         
@@ -143,43 +89,24 @@
           viewport: viewport
         };
         
-        // Clear the container and show we're rendering
-        container.innerHTML = '';
-        
-        // Add the canvas to the container
-        container.appendChild(canvas);
-        
-        // Render the page
         page.render(renderContext).promise.then(() => {
-          console.log(`Page ${pageNumber} rendered`);
-        }).catch(error => {
-          console.error(`Error rendering page ${pageNumber}:`, error);
-          container.innerHTML = `<div class="loading-indicator">Error loading page ${pageNumber}</div>`;
+          pdfViewer.appendChild(canvas);
         });
-      }).catch(error => {
-        console.error(`Error getting page ${pageNumber}:`, error);
-        container.innerHTML = `<div class="loading-indicator">Error loading page ${pageNumber}</div>`;
       });
     }
     
-    // Handle window resize
-    let resizeTimeout;
+    // Adjust scale when window is resized
     window.addEventListener('resize', function() {
-      // Debounce resize event
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        // Clear rendered pages tracking
-        pagesRendered = {};
-        
-        // Reset all containers to loading state
-        document.querySelectorAll('.pdf-page-container').forEach(container => {
-          const pageNum = parseInt(container.dataset.pageNumber);
-          container.innerHTML = `<div class="loading-indicator">Page ${pageNum}</div>`;
+      // Clear existing canvases
+      pdfViewer.innerHTML = '';
+      
+      // Reload the PDF with new scale
+      pdfjsLib.getDocument('./portfolio.pdf').promise
+        .then(function(pdfDoc) {
+          for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+            renderPage(pdfDoc, pageNum);
+          }
         });
-        
-        // Re-observe all containers
-        setupIntersectionObserver();
-      }, 250);
     });
   </script>
 </body>
