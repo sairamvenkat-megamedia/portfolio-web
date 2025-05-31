@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Portfolio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Mega Media - Sai Ram Venkat Portfolio</title>
   <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
@@ -21,93 +21,46 @@
       max-width: 100%;
       padding: 0;
       margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     
-    #pdf-viewer {
-      width: 100%;
-      background: white;
-    }
-    
-    canvas {
+    .slide {
       width: 95%;
+      margin: 10px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    img {
+      width: 100%;
       height: auto;
       display: block;
-      margin: 10px auto;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div id="pdf-viewer"></div>
+  <div class="container" id="slides-container">
+    <!-- Slides will be inserted here by JavaScript -->
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
-    // Using CDN version of PDF.js
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const slidesContainer = document.getElementById('slides-container');
+    const totalSlides = 18;
     
-    const pdfViewer = document.getElementById('pdf-viewer');
-    
-    // Calculate scale based on window width
-    function getScale() {
-      // Get the viewport width
-      const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-      // PDF.js default viewport width is typically around 800-1000px
-      // We'll use 900 as an estimate and scale accordingly
-      return viewportWidth / 900;
-    }
-    
-    // Load the PDF
-    pdfjsLib.getDocument('./portfolio.pdf').promise
-      .then(function(pdfDoc) {
-        console.log(`PDF loaded: ${pdfDoc.numPages} pages`);
-        
-        // Render all pages
-        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-          renderPage(pdfDoc, pageNum);
-        }
-      })
-      .catch(function(error) {
-        console.error('Error loading PDF:', error);
-      });
-    
-    // Render a specific page
-    function renderPage(pdfDoc, pageNumber) {
-      pdfDoc.getPage(pageNumber).then(function(page) {
-        const scale = getScale();
-        const viewport = page.getViewport({ scale });
-        
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        
-        const renderContext = {
-          canvasContext: context,
-          viewport: viewport
-        };
-        
-        page.render(renderContext).promise.then(() => {
-          pdfViewer.appendChild(canvas);
-        });
-      });
-    }
-    
-    // Adjust scale when window is resized
-    window.addEventListener('resize', function() {
-      // Clear existing canvases
-      pdfViewer.innerHTML = '';
+    // Create and append all slides in order
+    for (let i = 1; i <= totalSlides; i++) {
+      const slideDiv = document.createElement('div');
+      slideDiv.className = 'slide';
       
-      // Reload the PDF with new scale
-      pdfjsLib.getDocument('./portfolio.pdf').promise
-        .then(function(pdfDoc) {
-          for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-            renderPage(pdfDoc, pageNum);
-          }
-        });
-    });
+      const img = document.createElement('img');
+      img.src = `SairamVenkatIndivualSlide/${i}.png`;
+      img.alt = `Slide ${i}`;
+      img.loading = 'lazy'; // Enable lazy loading for better performance
+      
+      slideDiv.appendChild(img);
+      slidesContainer.appendChild(slideDiv);
+    }
   </script>
 </body>
 </html>
